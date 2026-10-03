@@ -1,0 +1,24 @@
+[ActivityManager]
+_k_friendly_name=Activity Manager
+switch-to-activity-0=none,none,Switch to activity "Default"
+
+[kwin]
+Expose=Ctrl+F9\tMeta+F9,Ctrl+F9\tMeta+F9,Toggle Present Windows (Current desktop)
+Window Close=Alt+F4,Alt+F4,Close Window
+Window Maximize=Meta+PgUp,Meta+PgUp,Maximize Window
+Switch to Desktop 3=,,Switch to Desktop 3
+_k_friendly_name=KWin
+
+[ksmserver]
+Lock Session=Screensaver\tMeta+L,Screensaver\tMeta+L,Lock Session
+_k_friendly_name=Session Management
+
+[services][org.kde.konsole.desktop]
+_launch=Ctrl+Alt+T
+
+[services][org.kde.spectacle.desktop]
+RectangularRegionScreenShot=Meta+Shift+S,none,Capture Rectangular Region
+OpenWithoutScreenshot=none
+
+[plasmashell]
+activate application launcher=Meta\tAlt+F1,Meta\tAlt+F1,Activate Application Launcher

@@ -57,8 +57,8 @@ SettingsRow {
                 }
 
                 DankActionButton {
-                    iconName: "edit"
-                    Accessible.name: I18n.tr("Edit")
+                    iconName: root.readOnly ? "visibility" : "edit"
+                    Accessible.name: root.readOnly ? I18n.tr("View") : I18n.tr("Edit")
                     Accessible.description: root.title + ", " + keyLine.modelData.key
                     anchors.verticalCenter: parent.verticalCenter
                     onClicked: root.editRequested(keyLine.index)

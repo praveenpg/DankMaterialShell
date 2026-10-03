@@ -14,7 +14,7 @@ Singleton {
     id: root
     readonly property var log: Log.scoped("KeybindsService")
 
-    property bool available: CompositorService.isAqueous || CompositorService.isNiri || CompositorService.isHyprland || CompositorService.isMango
+    property bool available: CompositorService.isAqueous || CompositorService.isNiri || CompositorService.isHyprland || CompositorService.isMango || CompositorService.isKwin
     property string currentProvider: {
         if (CompositorService.isAqueous)
             return "aqueous";
@@ -24,6 +24,8 @@ Singleton {
             return "hyprland";
         if (CompositorService.isMango)
             return "mangowc";
+        if (CompositorService.isKwin)
+            return "kwin";
         return "";
     }
 
@@ -36,6 +38,8 @@ Singleton {
             return "hyprland";
         if (CompositorService.isMango)
             return "mangowc";
+        if (CompositorService.isKwin)
+            return "kwin";
         return "";
     }
     property bool cheatsheetAvailable: cheatsheetProvider !== ""
@@ -112,7 +116,9 @@ Singleton {
     readonly property var includePaths: ConfigIncludeResolve.includePaths("binds", includeCompositor, configDir)
     readonly property string dmsBindsPath: includePaths?.fragmentFiles[0] ?? ""
     readonly property string mainConfigPath: includePaths?.configFile ?? ""
-    readonly property bool readOnly: currentProvider === "hyprland" && dmsStatus.readOnly === true
+    readonly property bool hyprlandLegacy: currentProvider === "hyprland" && dmsStatus.readOnly === true
+    // KWin shortcuts belong to kglobalaccel; DMS lists them and KDE's settings change them.
+    readonly property bool readOnly: currentProvider === "kwin" || hyprlandLegacy
     readonly property var actionTypes: Actions.getActionTypes()
     readonly property var dmsActions: getDmsActions()
 
@@ -126,7 +132,7 @@ Singleton {
     Connections {
         target: CompositorService
         function onCompositorChanged() {
-            if (!CompositorService.isNiri && !CompositorService.isMango && !CompositorService.isAqueous)
+            if (!CompositorService.isNiri && !CompositorService.isMango && !CompositorService.isAqueous && !CompositorService.isKwin)
                 return;
             Qt.callLater(root.loadBinds);
         }
@@ -949,6 +955,10 @@ Singleton {
     }
 
     function showHyprlandReadOnlyWarning() {
+        if (currentProvider === "kwin") {
+            ToastService.showWarning(I18n.tr("KWin shortcuts"), I18n.tr("Change KWin shortcuts in KDE's shortcut settings", "keybinds read-only notice on KWin"));
+            return;
+        }
         ToastService.showWarning(I18n.tr("Hyprland conf mode"), I18n.tr("This install is still using hyprland.conf. Run dms setup to migrate before changing these settings."), "dms setup", "hyprland-migration");
     }
 

@@ -1494,7 +1494,7 @@ Singleton {
         if (isNiri)
             NiriService.generateNiriBlurrule();
         if (isKwin)
-            KWinService.probeRulesEditor();
+            KWinService.probeKdeEditors();
         Qt.callLater(seedDmsWindowFloatingRule);
     }
 

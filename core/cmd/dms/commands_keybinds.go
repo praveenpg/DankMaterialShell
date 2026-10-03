@@ -145,6 +145,10 @@ func initializeProviders() {
 		}
 	}
 
+	if err := registry.Register(providers.NewKWinProvider("")); err != nil {
+		log.Warnf("Failed to register KWin provider: %v", err)
+	}
+
 	niriProvider := providers.NewNiriProvider("")
 	if err := registry.Register(niriProvider); err != nil {
 		log.Warnf("Failed to register Niri provider: %v", err)
@@ -218,6 +222,8 @@ func makeProviderWithPath(name, path string) keybinds.Provider {
 		return providers.NewMiracleProvider(path)
 	case "niri":
 		return providers.NewNiriProvider(path)
+	case "kwin":
+		return providers.NewKWinProvider(path)
 	default:
 		return nil
 	}

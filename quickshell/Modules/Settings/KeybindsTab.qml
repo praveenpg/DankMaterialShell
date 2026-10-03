@@ -64,6 +64,8 @@ Item {
     readonly property int categoryIndex: Math.max(0, categoryChips.findIndex(chip => chip.value === selectedCategory))
 
     readonly property string editorHint: {
+        if (KeybindsService.currentProvider === "kwin")
+            return I18n.tr("Change KWin shortcuts in KDE's shortcut settings", "keybinds read-only notice on KWin");
         if (KeybindsService.readOnly)
             return I18n.tr("Hyprland conf mode is read-only in Settings");
         if (KeybindsService.requiresBindReview)
@@ -410,7 +412,9 @@ Item {
     }
 
     function _updateCategories() {
-        _cachedCategories = ["__overrides__"].concat(KeybindsService.getCategories());
+        // KWin shortcuts are read-only here, so DMS overrides cannot exist.
+        const overrides = KeybindsService.currentProvider === "kwin" ? [] : ["__overrides__"];
+        _cachedCategories = overrides.concat(KeybindsService.getCategories());
         if (selectedCategory && !_cachedCategories.includes(selectedCategory))
             selectedCategory = "";
     }
@@ -667,9 +671,10 @@ Item {
                     id: warningBox
 
                     readonly property var status: KeybindsService.dmsStatus
-                    readonly property bool showLegacy: KeybindsService.readOnly
-                    readonly property bool showWarning: !showLegacy && status.included && status.overriddenBy > 0
-                    readonly property bool showSetup: !showLegacy && !status.included
+                    readonly property bool showKwin: KeybindsService.currentProvider === "kwin"
+                    readonly property bool showLegacy: KeybindsService.hyprlandLegacy
+                    readonly property bool showWarning: !showKwin && !showLegacy && status.included && status.overriddenBy > 0
+                    readonly property bool showSetup: !showKwin && !showLegacy && !status.included
 
                     width: parent.width
                     height: warningSection.implicitHeight + Theme.spacingL * 2
@@ -677,7 +682,7 @@ Item {
                     color: Theme.withAlpha(Theme.primary, 0.15)
                     border.color: Theme.withAlpha(Theme.primary, 0.3)
                     border.width: Theme.outlineWidth
-                    visible: (showLegacy || showWarning || showSetup) && !KeybindsService.loading
+                    visible: (showKwin || showLegacy || showWarning || showSetup) && !KeybindsService.loading
 
                     Row {
                         id: warningSection
@@ -686,19 +691,21 @@ Item {
                         spacing: Theme.spacingM
 
                         DankIcon {
-                            name: warningBox.showWarning ? "info" : "warning"
+                            name: warningBox.showWarning || warningBox.showKwin ? "info" : "warning"
                             size: Theme.iconSize
                             color: Theme.primary
                             anchors.verticalCenter: parent.verticalCenter
                         }
 
                         Column {
-                            width: parent.width - Theme.iconSize - (fixButton.visible ? fixButton.width + Theme.spacingM : 0) - Theme.spacingM
+                            width: parent.width - Theme.iconSize - (fixButton.visible ? fixButton.width + Theme.spacingM : 0) - (kdeShortcutsButton.visible ? kdeShortcutsButton.width + Theme.spacingM : 0) - Theme.spacingM
                             spacing: Theme.spacingXS
                             anchors.verticalCenter: parent.verticalCenter
 
                             StyledText {
                                 text: {
+                                    if (warningBox.showKwin)
+                                        return I18n.tr("KWin shortcuts");
                                     if (warningBox.showLegacy)
                                         return I18n.tr("Hyprland conf mode");
                                     if (warningBox.showSetup)
@@ -716,6 +723,8 @@ Item {
 
                             StyledText {
                                 text: {
+                                    if (warningBox.showKwin)
+                                        return KWinService.shortcutsEditorAvailable ? I18n.tr("These come from KWin and are read-only here. Open KDE's shortcut settings to change them.", "keybinds notice on KWin with KDE settings installed") : I18n.tr("These come from KWin and are read-only here. Install KDE's shortcut settings (plasma-desktop) to change them.", "keybinds notice on KWin without KDE settings");
                                     if (warningBox.showLegacy)
                                         return I18n.tr("This install is still using hyprland.conf. Run dms setup to migrate before changing these settings.");
                                     if (warningBox.showSetup)
@@ -743,6 +752,16 @@ Item {
                             enabled: !KeybindsService.fixing
                             anchors.verticalCenter: parent.verticalCenter
                             onClicked: KeybindsService.fixDmsBindsInclude()
+                        }
+
+                        DankButton {
+                            id: kdeShortcutsButton
+                            visible: warningBox.showKwin && KWinService.shortcutsEditorAvailable
+                            text: I18n.tr("Open")
+                            backgroundColor: Theme.primary
+                            textColor: Theme.primaryText
+                            anchors.verticalCenter: parent.verticalCenter
+                            onClicked: KWinService.openShortcutsEditor()
                         }
                     }
                 }

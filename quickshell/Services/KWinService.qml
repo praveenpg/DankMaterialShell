@@ -11,8 +11,10 @@ Singleton {
     readonly property var log: Log.scoped("KWinService")
 
     property var state: ({})
-    // KDE's rule editor (kcm_kwinrules, opened through kcmutils' kcmshell6) stands in for DMS-managed rules on KWin.
+    // KDE's own editors stand in for DMS editing on KWin: window rules (kcm_kwinrules, from kwin)
+    // and shortcuts (kcm_keys, from plasma-desktop), both opened through kcmutils' kcmshell6.
     property bool rulesEditorAvailable: false
+    property bool shortcutsEditorAvailable: false
     readonly property bool available: state.available === true
     readonly property var desktops: state.desktops ?? []
     readonly property var outputs: state.outputs ?? []
@@ -99,14 +101,20 @@ Singleton {
         };
     }
 
-    function probeRulesEditor() {
-        Proc.runCommand("kwin-rules-editor", ["sh", "-c", "command -v kcmshell6"], (output, exitCode) => {
-            root.rulesEditorAvailable = exitCode === 0;
+    function probeKdeEditors() {
+        Proc.runCommand("kwin-kde-editors", ["kcmshell6", "--list"], (output, exitCode) => {
+            const modules = exitCode === 0 ? output.split("\n").map(line => line.split(" ")[0]) : [];
+            root.rulesEditorAvailable = modules.includes("kcm_kwinrules");
+            root.shortcutsEditorAvailable = modules.includes("kcm_keys");
         }, 0);
     }
 
     function openRulesEditor() {
         Quickshell.execDetached(["kcmshell6", "kcm_kwinrules"]);
+    }
+
+    function openShortcutsEditor() {
+        Quickshell.execDetached(["kcmshell6", "kcm_keys"]);
     }
 
     function lock() {
