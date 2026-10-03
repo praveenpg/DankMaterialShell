@@ -19,8 +19,14 @@ type Window struct {
 	Output           string   `json:"output"`
 	Active           bool     `json:"active"`
 	Minimized        bool     `json:"minimized"`
+	Maximized        bool     `json:"maximized"`
+	Fullscreen       bool     `json:"fullscreen"`
 	DemandsAttention bool     `json:"demandsAttention"`
 	SkipTaskbar      bool     `json:"skipTaskbar"`
+	CanClose         bool     `json:"canClose"`
+	CanMinimize      bool     `json:"canMinimize"`
+	CanMaximize      bool     `json:"canMaximize"`
+	PID              int      `json:"pid"`
 }
 
 type State struct {

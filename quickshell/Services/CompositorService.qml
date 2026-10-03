@@ -98,7 +98,7 @@ Singleton {
             right: SettingsData.Position.Right
         })
 
-    readonly property bool supportsMinimize: isAqueous && AqueousService.available ? AqueousService.capabilities.commands && !AqueousService.locked : DankCommon.Compositor.supportsMinimize
+    readonly property bool supportsMinimize: isAqueous && AqueousService.available ? AqueousService.capabilities.commands && !AqueousService.locked : isKwin ? KWinService.available : DankCommon.Compositor.supportsMinimize
 
     readonly property bool hasWorkspaceIpc: {
         switch (compositor) {
@@ -259,6 +259,7 @@ Singleton {
         target: KWinService
         enabled: root.isKwin
         function onStateChanged() {
+            root.scheduleSort();
             root.workspaceStateChanged();
         }
     }
@@ -266,6 +267,8 @@ Singleton {
     function canMinimize(toplevel) {
         if (isAqueous && toplevel?.aqueousWindowId)
             return AqueousService.available && !AqueousService.locked && AqueousService.capabilities.commands && toplevel.canMinimize;
+        if (isKwin && toplevel?.kwinWindowId)
+            return KWinService.available && toplevel.canMinimize;
         return supportsMinimize && toplevel && toplevel.minimized !== undefined;
     }
 
@@ -277,7 +280,7 @@ Singleton {
     function activateToplevel(toplevel) {
         if (!toplevel)
             return;
-        if (isAqueous && toplevel.aqueousWindowId) {
+        if ((isAqueous && toplevel.aqueousWindowId) || (isKwin && toplevel.kwinWindowId)) {
             toplevel.activate();
             return;
         }
@@ -380,6 +383,8 @@ Singleton {
             return "";
         if (toplevel.aqueousKey)
             return toplevel.aqueousKey;
+        if (toplevel.kwinKey)
+            return toplevel.kwinKey;
         if (toplevel.niriWindowId !== undefined)
             return "niri:" + toplevel.niriWindowId;
         if (toplevel.mangoWindowId !== undefined)
@@ -541,6 +546,8 @@ Singleton {
     function computeSortedToplevels() {
         if (isAqueous && AqueousService.available)
             return AqueousService.toplevels;
+        if (isKwin)
+            return KWinService.toplevels;
         if (!ToplevelManager.toplevels || !ToplevelManager.toplevels.values)
             return [];
 
@@ -795,6 +802,8 @@ Singleton {
             const active = AqueousService.workspacesForOutput(_screenName(screen)).filter(w => w.active).map(w => w.id);
             return toplevels.filter(t => active.includes(t.aqueousWorkspaceId));
         }
+        if (isKwin)
+            return WindowModel.kwinOnCurrentDesktop(toplevels, KWinService.outputs, _screenName(screen));
         if (useNiriSorting)
             return NiriService.filterCurrentWorkspace(toplevels, screen);
         if (useMangoSorting)
@@ -812,6 +821,8 @@ Singleton {
             return "niriWindowId";
         case "mango":
             return "mangoWindowId";
+        case "kwin":
+            return "kwinKey";
         default:
             return "address";
         }
@@ -823,6 +834,8 @@ Singleton {
                 "workspace": "",
                 "output": ""
             };
+        if (isKwin && toplevel.kwinWindowId)
+            return WindowModel.kwinPlacement(toplevel, KWinService.desktops);
         if (isAqueous && AqueousService.available) {
             const workspace = AqueousService.workspaces.find(w => w.id === toplevel.aqueousWorkspaceId);
             return {
@@ -1202,6 +1215,8 @@ Singleton {
             if (AqueousService.available)
                 return WindowModel.aqueousActiveWindow(AqueousService.focusedWindow, screenName);
             break;
+        case "kwin":
+            return WindowModel.kwinActiveWindow(KWinService.focusedWindow, screenName);
         }
         const active = ToplevelManager.activeToplevel || _fallbackActiveWindow(screenName, includeLastFocused);
         if (!active)
@@ -1280,6 +1295,7 @@ Singleton {
         case "hyprland":
         case "niri":
         case "aqueous":
+        case "kwin":
             return filterCurrentWorkspace(sortedToplevels, screenName).some(t => t?.maximized);
         default:
             return false;
@@ -2141,6 +2157,9 @@ Singleton {
             return true;
         case "umbriel":
             UmbrielService.action("window-focus:" + windowId);
+            return true;
+        case "kwin":
+            KWinService.windowAction(windowId, "activate");
             return true;
         default:
             return false;

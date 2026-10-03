@@ -1,0 +1,17 @@
+{
+  "desktops": [
+    { "id": "d1", "name": "Web" },
+    { "id": "d2", "name": "Code" }
+  ],
+  "outputs": [
+    { "name": "DP-1", "currentDesktop": "d1" },
+    { "name": "HDMI-A-1", "currentDesktop": "d2" }
+  ],
+  "toplevels": [
+    { "kwinWindowId": "{a}", "appId": "firefox", "kwinOutput": "DP-1", "kwinDesktops": ["d1"], "kwinOnAllDesktops": false, "activated": true },
+    { "kwinWindowId": "{b}", "appId": "org.kde.kate", "kwinOutput": "DP-1", "kwinDesktops": ["d2"], "kwinOnAllDesktops": false, "activated": false },
+    { "kwinWindowId": "{c}", "appId": "org.kde.konsole", "kwinOutput": "HDMI-A-1", "kwinDesktops": ["d2"], "kwinOnAllDesktops": false, "activated": false },
+    { "kwinWindowId": "{d}", "appId": "org.kde.yakuake", "kwinOutput": "DP-1", "kwinDesktops": [], "kwinOnAllDesktops": true, "activated": false },
+    { "kwinWindowId": "{e}", "appId": "org.kde.dolphin", "kwinOutput": "HDMI-A-1", "kwinDesktops": ["d1", "d2"], "kwinOnAllDesktops": false, "activated": false }
+  ]
+}

@@ -20,11 +20,12 @@ import (
 )
 
 type session struct {
-	t    *testing.T
-	env  []string
-	addr string
-	kwin *exec.Cmd
-	conn *dbus.Conn
+	t      *testing.T
+	env    []string
+	addr   string
+	socket string
+	kwin   *exec.Cmd
+	conn   *dbus.Conn
 }
 
 // sandboxEnv isolates every XDG dir: kwin_wayland and anything the private bus
@@ -96,8 +97,9 @@ func (s *session) kwinUp() bool {
 }
 
 func (s *session) startKwin() {
+	s.socket = fmt.Sprintf("wayland-dms-kwin-test-%d", os.Getpid())
 	s.kwin = exec.Command("kwin_wayland", "--virtual", "--no-lockscreen", "--no-global-shortcuts",
-		"--socket", fmt.Sprintf("wayland-dms-kwin-test-%d", os.Getpid()),
+		"--socket", s.socket,
 		"--output-count", "2", "--width", "1280", "--height", "800")
 	s.kwin.Env = s.env
 	if err := s.kwin.Start(); err != nil {
@@ -217,4 +219,102 @@ func TestBridgeAgainstHeadlessKwin(t *testing.T) {
 		st := m.GetState()
 		return st.Available && st.PerOutputDesktops && len(st.Outputs) == 2
 	})
+}
+
+func (s *session) openWindow(class string) {
+	client := exec.Command("alacritty", "--class", class, "--title", class, "-e", "sleep", "600")
+	client.Env = append(slices.Clone(s.env), "WAYLAND_DISPLAY="+s.socket)
+	if err := client.Start(); err != nil {
+		s.t.Fatal(err)
+	}
+	s.t.Cleanup(func() { client.Process.Kill(); client.Wait() })
+}
+
+func windowByApp(st State, app string) *Window {
+	for i := range st.Windows {
+		if st.Windows[i].AppID == app {
+			return &st.Windows[i]
+		}
+	}
+	return nil
+}
+
+func TestWindowActionsTargetOnlyTheNamedWindow(t *testing.T) {
+	if _, err := exec.LookPath("alacritty"); err != nil {
+		t.Skip("alacritty not installed")
+	}
+	s := startSession(t)
+	m, err := NewManager(s.connect(), t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(m.Close)
+	waitUntil(t, "snapshot", func() bool { return m.GetState().Available })
+
+	s.openWindow("BridgeBack")
+	waitUntil(t, "background window", func() bool { return windowByApp(m.GetState(), "BridgeBack") != nil })
+	s.openWindow("BridgeFront")
+	waitUntil(t, "focused window", func() bool {
+		w := windowByApp(m.GetState(), "BridgeFront")
+		return w != nil && w.Active
+	})
+	back := windowByApp(m.GetState(), "BridgeBack").ID
+	front := windowByApp(m.GetState(), "BridgeFront").ID
+
+	frontUntouched := func(label string) {
+		t.Helper()
+		w := windowByApp(m.GetState(), "BridgeFront")
+		if w == nil || !w.Active || w.Minimized || w.Maximized || w.Output != "Virtual-0" {
+			t.Fatalf("%s changed the focused window: %+v", label, w)
+		}
+	}
+
+	steps := []struct {
+		action string
+		args   map[string]any
+		done   func(*Window) bool
+	}{
+		{"setMinimized", map[string]any{"value": true}, func(w *Window) bool { return w.Minimized }},
+		{"setMinimized", map[string]any{"value": true}, func(w *Window) bool { return w.Minimized }},
+		{"setMaximized", map[string]any{"value": true}, func(w *Window) bool { return w.Maximized }},
+		{"moveToOutput", map[string]any{"output": "Virtual-1"}, func(w *Window) bool { return w.Output == "Virtual-1" }},
+	}
+	for _, step := range steps {
+		if err := m.WindowAction(back, step.action, step.args); err != nil {
+			t.Fatalf("%s: %v", step.action, err)
+		}
+		waitUntil(t, step.action, func() bool { return step.done(windowByApp(m.GetState(), "BridgeBack")) })
+		frontUntouched(step.action)
+	}
+
+	for _, bad := range []struct {
+		window, action string
+		args           map[string]any
+		want           string
+	}{
+		{"{missing}", "close", nil, "unknown window"},
+		{back, "explode", nil, "unknown window action"},
+		{back, "setMinimized", map[string]any{"value": "yes"}, "boolean"},
+		{back, "moveToDesktop", map[string]any{"desktop": "{missing}"}, "unknown desktop"},
+	} {
+		if err := m.WindowAction(bad.window, bad.action, bad.args); err == nil || !strings.Contains(err.Error(), bad.want) {
+			t.Fatalf("WindowAction(%s, %s) error = %v, want %q", bad.window, bad.action, err, bad.want)
+		}
+	}
+
+	if err := m.WindowAction(back, "activate", nil); err != nil {
+		t.Fatal(err)
+	}
+	waitUntil(t, "activate restores and focuses", func() bool {
+		w := windowByApp(m.GetState(), "BridgeBack")
+		return w.Active && !w.Minimized
+	})
+
+	if err := m.WindowAction(front, "close", nil); err != nil {
+		t.Fatal(err)
+	}
+	waitUntil(t, "closed window removed", func() bool { return windowByApp(m.GetState(), "BridgeFront") == nil })
+	if windowByApp(m.GetState(), "BridgeBack") == nil {
+		t.Fatal("closing one window removed the other")
+	}
 }

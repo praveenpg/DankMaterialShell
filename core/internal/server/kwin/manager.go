@@ -138,6 +138,15 @@ func (m *Manager) SwitchDesktop(desktop, output string) error {
 	return m.runCommand(map[string]any{"op": "switchDesktop", "desktop": desktop, "output": output})
 }
 
+// WindowAction runs one window action; args carry its value, desktop or output.
+func (m *Manager) WindowAction(window, action string, args map[string]any) error {
+	cmd := map[string]any{"op": "window", "window": window, "action": action}
+	for k, v := range args {
+		cmd[k] = v
+	}
+	return m.runCommand(cmd)
+}
+
 func (m *Manager) RenameDesktop(desktop, name string) error {
 	return m.conn.Object(kwinService, "/VirtualDesktopManager").
 		Call("org.kde.KWin.VirtualDesktopManager.setDesktopName", 0, desktop, name).Err

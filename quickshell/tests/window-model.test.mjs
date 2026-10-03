@@ -6,6 +6,7 @@ import test from "node:test";
 const here = new URL("./", import.meta.url);
 const source = path => readFileSync(new URL(path, here), "utf8");
 const fixture = name => JSON.parse(readFileSync(new URL(`fixtures/windows/${name}.json`, here), "utf8"));
+const plain = value => JSON.parse(JSON.stringify(value));
 const Position = { Top: 0, Bottom: 1, Left: 2, Right: 3 };
 const positions = ["Top", "Bottom", "Left", "Right"];
 
@@ -17,6 +18,7 @@ function lift(text, name, context) {
 
 const compositorService = source("../Services/CompositorService.qml");
 const aqueousService = source("../Services/AqueousService.qml");
+const kwinService = source("../Services/KWinService.qml");
 const model = vm.createContext({});
 vm.runInContext(source("../Common/WindowModel.js").replace(/^\.pragma.*$/m, ""), model);
 
@@ -211,4 +213,50 @@ test("aqueous: focused window must sit on the bar's screen, overlap ignores hidd
     assert.deepEqual(positions.map(p => aqueousOverlap(a, "DP-1", p)), [false, true, false, false]);
     assert.deepEqual(positions.map(p => aqueousOverlap(a, "HDMI-A-1", p)), [true, false, true, false]);
     assert.equal(aqueousOverlap(a, "DP-9", "Top"), false);
+});
+
+test("kwin: windows follow each output's current desktop, sticky windows show everywhere on their output", () => {
+    const k = fixture("kwin");
+    const ids = list => list.map(t => t.kwinWindowId);
+    assert.deepEqual(ids(model.kwinOnCurrentDesktop(k.toplevels, k.outputs, "DP-1")), ["{a}", "{d}"]);
+    assert.deepEqual(ids(model.kwinOnCurrentDesktop(k.toplevels, k.outputs, "HDMI-A-1")), ["{c}", "{e}"]);
+    assert.deepEqual(ids(model.kwinOnCurrentDesktop(k.toplevels, k.outputs, "DP-9")), []);
+    assert.deepEqual(plain(model.kwinPlacement(k.toplevels[4], k.desktops)), { workspace: "Web, Code", output: "HDMI-A-1" });
+    assert.deepEqual(plain(model.kwinPlacement(k.toplevels[3], k.desktops)), { workspace: "", output: "DP-1" });
+});
+
+test("kwin: the focused window counts only on its own output", () => {
+    const focused = fixture("kwin").toplevels[0];
+    const active = screenName => facade("kwin", { KWinService: { focusedWindow: focused } }).activeWindowForScreen(screenName, null, false)?.kwinWindowId ?? null;
+    assert.equal(active("DP-1"), "{a}");
+    assert.equal(active("HDMI-A-1"), null);
+    assert.equal(active(null), "{a}");
+    assert.equal(facade("kwin", { KWinService: { focusedWindow: null } }).activeWindowForScreen("DP-1", null, false), null);
+});
+
+test("kwin: facade setters and actions send explicit window requests, never toggles", () => {
+    const sent = [];
+    const context = vm.createContext({
+        DMSService: { sendRequest: (method, params) => sent.push([method, params]) },
+        Quickshell: { screens: [{ name: "DP-1" }, { name: "HDMI-A-1" }] },
+        log: { warn() {} }
+    });
+    lift(kwinService, "windowAction", context);
+    lift(kwinService, "windowFacade", context);
+    context.root = context;
+    const toplevel = context.windowFacade({ id: "{a}", appId: "kate", title: "notes", output: "HDMI-A-1", desktops: ["d1"], minimized: false, maximized: true, fullscreen: false, active: false, pid: 42 });
+    assert.deepEqual(toplevel.screens.map(s => s.name), ["HDMI-A-1"]);
+    assert.equal(toplevel.maximized, true);
+    toplevel.minimized = true;
+    toplevel.maximized = false;
+    toplevel.fullscreen = true;
+    toplevel.activate();
+    toplevel.close();
+    assert.deepEqual(plain(sent), [
+        ["kwin.windowAction", { window: "{a}", action: "setMinimized", value: true }],
+        ["kwin.windowAction", { window: "{a}", action: "setMaximized", value: false }],
+        ["kwin.windowAction", { window: "{a}", action: "setFullscreen", value: true }],
+        ["kwin.windowAction", { window: "{a}", action: "activate" }],
+        ["kwin.windowAction", { window: "{a}", action: "close" }]
+    ]);
 });

@@ -26,8 +26,14 @@ function windowRecord(w) {
         output: w.output ? w.output.name : "",
         active: w.active,
         minimized: w.minimized,
+        maximized: w.maximizeMode === 3,
+        fullscreen: w.fullScreen,
         demandsAttention: w.demandsAttention,
-        skipTaskbar: w.skipTaskbar
+        skipTaskbar: w.skipTaskbar,
+        canClose: w.closeable,
+        canMinimize: w.minimizable,
+        canMaximize: w.maximizable,
+        pid: w.pid
     };
 }
 
@@ -64,8 +70,10 @@ flushTimer.timeout.connect(function () {
         emit("changed", { windows: windows });
 });
 
-var WATCHED = ["captionChanged", "minimizedChanged", "demandsAttentionChanged", "skipTaskbarChanged",
-    "desktopsChanged", "outputChanged", "desktopFileNameChanged", "windowClassChanged"];
+var WATCHED = ["captionChanged", "minimizedChanged", "maximizedChanged", "fullScreenChanged",
+    "demandsAttentionChanged", "skipTaskbarChanged", "desktopsChanged", "outputChanged",
+    "desktopFileNameChanged", "windowClassChanged", "closeableChanged", "minimizeableChanged",
+    "maximizeableChanged"];
 
 function track(w) {
     if (!trackable(w))

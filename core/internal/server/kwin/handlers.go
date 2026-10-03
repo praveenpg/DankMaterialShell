@@ -21,6 +21,8 @@ func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 		handleSwitchDesktop(conn, req, manager)
 	case "kwin.renameDesktop":
 		handleRenameDesktop(conn, req, manager)
+	case "kwin.windowAction":
+		handleWindowAction(conn, req, manager)
 	default:
 		models.RespondError(conn, req.ID, fmt.Sprintf("unknown method: %s", req.Method))
 	}
@@ -55,4 +57,28 @@ func handleRenameDesktop(conn *ipc.ConnWriter, req ipc.Request, manager *Manager
 		return
 	}
 	models.Respond(conn, req.ID, models.SuccessResult{Success: true, Message: "desktop renamed"})
+}
+
+func handleWindowAction(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
+	window, err := params.StringNonEmpty(req.Params, "window")
+	if err != nil {
+		models.RespondError(conn, req.ID, err.Error())
+		return
+	}
+	action, err := params.StringNonEmpty(req.Params, "action")
+	if err != nil {
+		models.RespondError(conn, req.ID, err.Error())
+		return
+	}
+	args := map[string]any{}
+	for _, key := range []string{"value", "desktop", "output"} {
+		if v, ok := params.Any(req.Params, key); ok {
+			args[key] = v
+		}
+	}
+	if err := manager.WindowAction(window, action, args); err != nil {
+		models.RespondError(conn, req.ID, err.Error())
+		return
+	}
+	models.Respond(conn, req.ID, models.SuccessResult{Success: true, Message: "window action applied"})
 }

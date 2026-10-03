@@ -185,3 +185,22 @@ function aqueousActiveWindow(focusedWindow, screenName) {
         return null;
     return screenName === null || focusedWindow.screens.some(s => s.name === screenName) ? focusedWindow : null;
 }
+
+function kwinOnCurrentDesktop(toplevels, outputs, screenName) {
+    const current = outputs.find(o => o.name === screenName)?.currentDesktop;
+    return toplevels.filter(t => t.kwinOutput === screenName && (t.kwinOnAllDesktops || t.kwinDesktops.includes(current)));
+}
+
+function kwinActiveWindow(focusedWindow, screenName) {
+    if (!focusedWindow)
+        return null;
+    return screenName === null || focusedWindow.kwinOutput === screenName ? focusedWindow : null;
+}
+
+function kwinPlacement(toplevel, desktops) {
+    const names = toplevel.kwinOnAllDesktops ? [] : toplevel.kwinDesktops.map(id => desktops.find(d => d.id === id)?.name ?? "");
+    return {
+        "workspace": names.join(", "),
+        "output": toplevel.kwinOutput
+    };
+}
