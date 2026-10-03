@@ -10,6 +10,7 @@ import (
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/proto/wlr_output_management"
 	wlhelpers "github.com/AvengeMedia/DankMaterialShell/core/internal/wayland/client"
 	"github.com/AvengeMedia/dankgo/wayland/client"
+	"github.com/godbus/dbus/v5"
 )
 
 type Compositor int
@@ -24,9 +25,21 @@ const (
 	CompositorMango
 	CompositorAqueous
 	CompositorUmbriel
+	CompositorKwin
 )
 
 var detectedCompositor Compositor = -1
+
+// KWin exports no socket env var; its D-Bus name is the only cheap, portable tell.
+var kwinRunning = func() bool {
+	conn, err := dbus.SessionBus()
+	if err != nil {
+		return false
+	}
+	var owned bool
+	err = conn.BusObject().Call("org.freedesktop.DBus.NameHasOwner", 0, "org.kde.KWin").Store(&owned)
+	return err == nil && owned
+}
 
 func DetectCompositor() Compositor {
 	if detectedCompositor >= 0 {
@@ -59,6 +72,12 @@ func DetectCompositor() Compositor {
 			}
 		}
 		detectedCompositor = c.compositor
+		return detectedCompositor
+	}
+
+	// Last, so a compositor nested inside a Plasma session still wins.
+	if kwinRunning() {
+		detectedCompositor = CompositorKwin
 		return detectedCompositor
 	}
 

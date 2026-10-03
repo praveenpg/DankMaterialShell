@@ -25,6 +25,7 @@ Singleton {
     property bool isLabwc: false
     property bool isAqueous: false
     property bool isUmbriel: false
+    property bool isKwin: false
     property string compositor: "unknown"
     property bool compositorDetected: false
     property bool outputPowerAvailable: false
@@ -166,6 +167,8 @@ Singleton {
             return "Aqueous";
         case "umbriel":
             return "Umbriel";
+        case "kwin":
+            return "KWin";
         default:
             return "";
         }
@@ -1419,6 +1422,10 @@ Singleton {
     }
 
     function _compositorNameFromComm(comm) {
+        // Plasma's kwin_wayland_wrapper owns the socket; comm truncates it to
+        // 15 chars on Linux and 19 under sockstat, so match the prefix.
+        if (comm.startsWith("kwin_wayland"))
+            return "kwin";
         switch (comm) {
         case "niri":
             return "niri";
@@ -1453,6 +1460,7 @@ Singleton {
         isLabwc = name === "labwc";
         isAqueous = name === "aqueous";
         isUmbriel = name === "umbriel";
+        isKwin = name === "kwin";
         compositor = name;
         compositorDetected = true;
         if (isNiri)

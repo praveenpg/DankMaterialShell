@@ -3,10 +3,23 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import vm from "node:vm";
 
-const COMPOSITORS = ["niri", "hyprland", "mango", "sway", "scroll", "miracle", "labwc", "aqueous"];
-const IDENTITY = { niri: "isNiri", hyprland: "isHyprland", mango: "isMango", sway: "isSway", scroll: "isScroll", miracle: "isMiracle", labwc: "isLabwc", aqueous: "isAqueous", umbriel: "isUmbriel" };
+const COMPOSITORS = ["niri", "hyprland", "mango", "sway", "scroll", "miracle", "labwc", "aqueous", "kwin"];
+const IDENTITY = { niri: "isNiri", hyprland: "isHyprland", mango: "isMango", sway: "isSway", scroll: "isScroll", miracle: "isMiracle", labwc: "isLabwc", aqueous: "isAqueous", umbriel: "isUmbriel", kwin: "isKwin" };
 
 const service = readFileSync(new URL("../Services/CompositorService.qml", import.meta.url), "utf8");
+
+function braceBlock(source, start) {
+    let depth = 0;
+    for (let i = start; i < source.length; i++) {
+        if (source[i] === "{")
+            depth++;
+        if (source[i] === "}")
+            depth--;
+        if (depth === 0)
+            return source.slice(start, i + 1);
+    }
+    return "";
+}
 
 function declarations(source) {
     const found = new Map();
@@ -17,17 +30,7 @@ function declarations(source) {
         const start = re.lastIndex;
         let end = start;
         if (source[start] === "{") {
-            let depth = 0;
-            for (let i = start; i < source.length; i++) {
-                if (source[i] === "{")
-                    depth++;
-                if (source[i] === "}")
-                    depth--;
-                if (depth === 0) {
-                    end = i + 1;
-                    break;
-                }
-            }
+            end = start + braceBlock(source, start).length;
         } else {
             end = source.indexOf("\n", start);
         }
@@ -97,12 +100,32 @@ test("native overview is niri and aqueous, pointer is niri and mango, input is n
     expectSet("supportsInputConfig", ["niri"]);
 });
 
-test("every compositor is known and an undetected one is not", () => {
-    expectSet("isKnownCompositor", COMPOSITORS);
+// kwin is detected but has no config layout or launcher logo yet
+const CONFIGURED = COMPOSITORS.filter(c => c !== "kwin");
+
+test("every configured compositor is known and kwin and an undetected one are not", () => {
+    expectSet("isKnownCompositor", CONFIGURED);
 });
 
-test("configKey is the lowercase key and empty when undetected", () => {
-    for (const compositor of COMPOSITORS)
+test("configKey is the lowercase key and empty for kwin or when undetected", () => {
+    for (const compositor of CONFIGURED)
         assert.equal(evaluate("configKey", compositor), compositor);
+    assert.equal(evaluate("configKey", "kwin"), "");
     assert.equal(evaluate("configKey", undefined), "");
+});
+
+test("the Wayland socket owner's comm maps to a compositor, kwin by prefix", () => {
+    const start = service.indexOf("{", service.indexOf("function _compositorNameFromComm(comm)"));
+    const nameFromComm = vm.runInNewContext(`(comm) => ${braceBlock(service, start)}`);
+    const cases = {
+        "kwin_wayland": "kwin",
+        "kwin_wayland_wr": "kwin",
+        "kwin_wayland_wrappe": "kwin",
+        "kwin_x11": "",
+        "niri": "niri",
+        "miracle-wm": "miracle",
+        "": ""
+    };
+    for (const [comm, expected] of Object.entries(cases))
+        assert.equal(nameFromComm(comm), expected, comm);
 });
