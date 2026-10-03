@@ -137,6 +137,11 @@ Scope {
             spawnCustomLocker();
             return;
         }
+        // KWin has no ext-session-lock, so the lock surface below would be refused.
+        if (CompositorService.isKwin) {
+            KWinService.lock();
+            return;
+        }
         if (shouldLock || pendingLock)
             return;
 
@@ -155,6 +160,11 @@ Scope {
     }
 
     function lockAndOutputsOff() {
+        if (CompositorService.isKwin) {
+            KWinService.lock();
+            CompositorService.powerOffMonitors();
+            return;
+        }
         IdleService.lockPowerOffRequested = true;
         if (sessionLock.secure) {
             beginPowerOff();

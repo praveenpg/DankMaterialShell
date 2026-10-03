@@ -23,6 +23,18 @@ func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 		handleRenameDesktop(conn, req, manager)
 	case "kwin.windowAction":
 		handleWindowAction(conn, req, manager)
+	case "kwin.lock":
+		if err := manager.Lock(); err != nil {
+			models.RespondError(conn, req.ID, err.Error())
+			return
+		}
+		models.Respond(conn, req.ID, models.SuccessResult{Success: true, Message: "locked"})
+	case "kwin.logout":
+		if err := manager.Logout(); err != nil {
+			models.RespondError(conn, req.ID, err.Error())
+			return
+		}
+		models.Respond(conn, req.ID, models.SuccessResult{Success: true, Message: "logging out"})
 	default:
 		models.RespondError(conn, req.ID, fmt.Sprintf("unknown method: %s", req.Method))
 	}

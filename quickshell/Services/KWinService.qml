@@ -97,6 +97,24 @@ Singleton {
         };
     }
 
+    function lock() {
+        DMSService.sendRequest("kwin.lock", null, response => {
+            if (!response.error)
+                return;
+            log.warn("lock failed:", response.error);
+            ToastService.showError(I18n.tr("Error"), response.error);
+        });
+    }
+
+    function logout() {
+        DMSService.sendRequest("kwin.logout", null, response => {
+            if (!response.error)
+                return;
+            log.warn("logout failed:", response.error);
+            ToastService.showError(I18n.tr("Error"), response.error);
+        });
+    }
+
     function renameDesktop(desktop, name) {
         DMSService.sendRequest("kwin.renameDesktop", {
             "desktop": desktop,

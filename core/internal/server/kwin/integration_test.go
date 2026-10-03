@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -20,12 +21,13 @@ import (
 )
 
 type session struct {
-	t      *testing.T
-	env    []string
-	addr   string
-	socket string
-	kwin   *exec.Cmd
-	conn   *dbus.Conn
+	t          *testing.T
+	lockscreen bool
+	env        []string
+	addr       string
+	socket     string
+	kwin       *exec.Cmd
+	conn       *dbus.Conn
 }
 
 // sandboxEnv isolates every XDG dir: kwin_wayland and anything the private bus
@@ -51,14 +53,21 @@ func sandboxEnv(t *testing.T) []string {
 		}
 		env = append(env, "XDG_"+dir+suffix+path)
 	}
+	env = append(env, "MESA_SHADER_CACHE_DISABLE=true")
+	// A document portal activated on the private bus FUSE-mounts runtime/doc, which TempDir cannot remove.
+	t.Cleanup(func() { exec.Command("fusermount3", "-uz", filepath.Join(root, "runtime", "doc")).Run() })
 	return env
 }
 
 func startSession(t *testing.T) *session {
+	return startSessionWith(t, false)
+}
+
+func startSessionWith(t *testing.T, lockscreen bool) *session {
 	if _, err := exec.LookPath("kwin_wayland"); err != nil {
 		t.Skip("kwin_wayland not installed")
 	}
-	s := &session{t: t, env: sandboxEnv(t)}
+	s := &session{t: t, env: sandboxEnv(t), lockscreen: lockscreen}
 
 	bus := exec.Command("dbus-daemon", "--session", "--nofork", "--print-address=1")
 	bus.Env = s.env
@@ -98,9 +107,11 @@ func (s *session) kwinUp() bool {
 
 func (s *session) startKwin() {
 	s.socket = fmt.Sprintf("wayland-dms-kwin-test-%d", os.Getpid())
-	s.kwin = exec.Command("kwin_wayland", "--virtual", "--no-lockscreen", "--no-global-shortcuts",
-		"--socket", s.socket,
-		"--output-count", "2", "--width", "1280", "--height", "800")
+	args := []string{"--virtual", "--no-global-shortcuts", "--socket", s.socket, "--output-count", "2", "--width", "1280", "--height", "800"}
+	if !s.lockscreen {
+		args = append(args, "--no-lockscreen")
+	}
+	s.kwin = exec.Command("kwin_wayland", args...)
 	s.kwin.Env = s.env
 	if err := s.kwin.Start(); err != nil {
 		s.t.Fatal(err)
@@ -108,12 +119,20 @@ func (s *session) startKwin() {
 	waitUntil(s.t, "kwin on the bus", s.kwinUp)
 }
 
+// stopKwin terminates rather than kills, so KWin takes its lock screen greeter down with it.
 func (s *session) stopKwin() {
 	if s.kwin == nil {
 		return
 	}
-	s.kwin.Process.Kill()
-	s.kwin.Wait()
+	s.kwin.Process.Signal(syscall.SIGTERM)
+	done := make(chan struct{})
+	go func() { s.kwin.Wait(); close(done) }()
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		s.kwin.Process.Kill()
+		<-done
+	}
 	s.kwin = nil
 }
 
@@ -317,4 +336,54 @@ func TestWindowActionsTargetOnlyTheNamedWindow(t *testing.T) {
 	if windowByApp(m.GetState(), "BridgeBack") == nil {
 		t.Fatal("closing one window removed the other")
 	}
+}
+
+func TestLogoutClosesWindowsThenQuitsKwin(t *testing.T) {
+	if _, err := exec.LookPath("alacritty"); err != nil {
+		t.Skip("alacritty not installed")
+	}
+	s := startSession(t)
+	m, err := NewManager(s.connect(), t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(m.Close)
+	waitUntil(t, "snapshot", func() bool { return m.GetState().Available })
+	s.openWindow("BridgeLogout")
+	waitUntil(t, "window", func() bool { return windowByApp(m.GetState(), "BridgeLogout") != nil })
+
+	exited := make(chan struct{})
+	kwin := s.kwin
+	go func() { kwin.Wait(); close(exited) }()
+	if err := m.Logout(); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case <-exited:
+	case <-time.After(10 * time.Second):
+		t.Fatal("kwin did not quit after logout")
+	}
+	s.kwin = nil
+}
+
+func TestLockUsesKwinsScreenLocker(t *testing.T) {
+	s := startSessionWith(t, true)
+	m, err := NewManager(s.connect(), t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(m.Close)
+
+	active := func() bool {
+		var on bool
+		err := s.conn.Object(kwinService, "/ScreenSaver").Call("org.freedesktop.ScreenSaver.GetActive", 0).Store(&on)
+		return err == nil && on
+	}
+	if active() {
+		t.Fatal("screen locked before Lock")
+	}
+	if err := m.Lock(); err != nil {
+		t.Fatal(err)
+	}
+	waitUntil(t, "KWin screen locker active", active)
 }

@@ -147,6 +147,24 @@ func (m *Manager) WindowAction(window, action string, args map[string]any) error
 	return m.runCommand(cmd)
 }
 
+// Lock hands over to KWin's own screen locker; KWin has no ext-session-lock for DMS's lock surface.
+func (m *Manager) Lock() error {
+	return m.conn.Object(kwinService, "/ScreenSaver").Call("org.freedesktop.ScreenSaver.Lock", 0).Err
+}
+
+// Logout mirrors Plasma: windows get to close (and object) before KWin quits.
+func (m *Manager) Logout() error {
+	session := m.conn.Object(kwinService, "/Session")
+	var closed bool
+	if err := session.Call("org.kde.KWin.Session.closeWaylandWindows", 0).Store(&closed); err != nil {
+		return err
+	}
+	if !closed {
+		return errors.New("a window refused to close")
+	}
+	return session.Call("org.kde.KWin.Session.quit", 0).Err
+}
+
 func (m *Manager) RenameDesktop(desktop, name string) error {
 	return m.conn.Object(kwinService, "/VirtualDesktopManager").
 		Call("org.kde.KWin.VirtualDesktopManager.setDesktopName", 0, desktop, name).Err

@@ -471,6 +471,11 @@ Singleton {
                 return;
             }
 
+            if (CompositorService.isKwin) {
+                KWinService.logout();
+                return;
+            }
+
             if (CompositorService.isSway || CompositorService.isScroll || CompositorService.isMiracle) {
                 try {
                     I3.dispatch("exit");
