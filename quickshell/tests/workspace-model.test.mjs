@@ -336,3 +336,31 @@ test("aqueous workspaces, current id, active record and windows", () => {
     assert.equal(model.aqueousWorkspaceOccupied(raw.toplevels, { id: "w1" }), true);
     assert.equal(model.aqueousWorkspaceOccupied(raw.toplevels, { id: "w5" }), false);
 });
+
+test("kwin lists every desktop per output with that output's current desktop and occupancy", () => {
+    const raw = fixture("kwin");
+    const cache = {};
+    const dp = model.kwinWorkspacesForScreen(raw, "DP-1", false, cache);
+    const hdmi = model.kwinWorkspacesForScreen(raw, "HDMI-A-1", false, cache);
+    assert.deepEqual(pick(dp, "id"), ["DP-1/d1", "DP-1/d2", "DP-1/d3"]);
+    assert.deepEqual(pick(dp, "name"), ["Web", "Code", "Chat"]);
+    assert.deepEqual(pick(dp, "active"), [true, false, false]);
+    assert.deepEqual(pick(hdmi, "active"), [false, true, false]);
+    // sticky and skip-taskbar windows never mark a desktop occupied
+    assert.deepEqual(pick(dp, "occupied"), [true, false, true]);
+    assert.deepEqual(pick(hdmi, "occupied"), [false, true, false]);
+    assert.deepEqual(pick(model.kwinWorkspacesForScreen(raw, "HDMI-A-1", true, cache), "id"), ["HDMI-A-1/d2"]);
+    assert.equal(model.kwinWorkspacesForScreen(raw, "DP-1", false, cache)[0], dp[0]);
+    assert.equal(model.kwinCurrentId(raw, "DP-1"), "DP-1/d1");
+    assert.equal(model.kwinCurrentId(raw, "HDMI-A-1"), "HDMI-A-1/d2");
+    assert.equal(model.kwinActiveWorkspace(raw, "HDMI-A-1").desktop, "d2");
+});
+
+test("kwin windows and urgency stay on their own output's desktop", () => {
+    const raw = fixture("kwin");
+    const [web, code, chat] = model.kwinWorkspacesForScreen(raw, "DP-1", false, {});
+    assert.deepEqual(plain(model.kwinWindowsOnWorkspace(raw.windows, web)), [{ id: "{a}", app_id: "firefox", activated: true }]);
+    assert.deepEqual(plain(model.kwinWindowsOnWorkspace(raw.windows, code)), []);
+    assert.equal(model.kwinWorkspaceUrgent(raw.windows, chat), true);
+    assert.equal(model.kwinWorkspaceUrgent(raw.windows, web), false);
+});

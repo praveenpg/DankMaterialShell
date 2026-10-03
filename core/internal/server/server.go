@@ -20,6 +20,7 @@ import (
 	serverDbus "github.com/AvengeMedia/DankMaterialShell/core/internal/server/dbus"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/evdev"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/freedesktop"
+	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/kwin"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/location"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/loginctl"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/models"
@@ -39,7 +40,7 @@ import (
 	"github.com/AvengeMedia/dankgo/syncmap"
 )
 
-const APIVersion = 37
+const APIVersion = 38
 
 var CLIVersion = "dev"
 
@@ -68,6 +69,7 @@ var cupsManager *cups.Manager
 var tailscaleManager *tailscale.Manager
 var brightnessManager *brightness.Manager
 var wlrOutputManager *wlroutput.Manager
+var kwinManager *kwin.Manager
 var evdevManager *evdev.Manager
 var clipboardManager *clipboard.Manager
 var dbusManager *serverDbus.Manager
@@ -272,6 +274,16 @@ func InitializeWlrOutputManager() error {
 	return nil
 }
 
+func InitializeKwinManager() error {
+	manager, err := kwin.Start()
+	if err != nil {
+		return err
+	}
+	kwinManager = manager
+	log.Info("KWin bridge initialized")
+	return nil
+}
+
 func InitializeEvdevManager() error {
 	manager, err := evdev.InitializeManager()
 	if err != nil {
@@ -462,6 +474,10 @@ func getCapabilities() Capabilities {
 
 	if wlrOutputManager != nil {
 		caps = append(caps, "wlroutput")
+	}
+
+	if kwinManager != nil {
+		caps = append(caps, "kwin")
 	}
 
 	if evdevManager != nil {
@@ -719,6 +735,15 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		}, mgr.GetState)
 	}
 
+	if shouldSubscribe("kwin") && kwinManager != nil {
+		mgr := kwinManager
+		id := clientID + "-kwin"
+		source := mgr.Subscribe(id)
+		forwardSubscription(&wg, eventChan, stopChan, "kwin", source, func() {
+			mgr.Unsubscribe(id)
+		}, mgr.GetState)
+	}
+
 	if shouldSubscribe("evdev") && evdevManager != nil {
 		mgr := evdevManager
 		id := clientID + "-evdev"
@@ -867,6 +892,9 @@ func cleanupManagers() {
 	}
 	if wlrOutputManager != nil {
 		wlrOutputManager.Close()
+	}
+	if kwinManager != nil {
+		kwinManager.Close()
 	}
 	if evdevManager != nil {
 		evdevManager.Close()
@@ -1298,6 +1326,10 @@ func (s *Server) Serve(printDocs bool) error {
 
 	if err := InitializeWlrOutputManager(); err != nil {
 		log.Debugf("WlrOutput manager unavailable: %v", err)
+	}
+
+	if err := InitializeKwinManager(); err != nil {
+		log.Debugf("KWin bridge unavailable: %v", err)
 	}
 
 	fatalErrChan := make(chan error, 1)

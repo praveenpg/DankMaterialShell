@@ -62,6 +62,7 @@ Singleton {
     signal brightnessStateUpdate(var data)
     signal brightnessDeviceUpdate(var device)
     signal wlrOutputStateUpdate(var data)
+    signal kwinStateUpdate(var data)
     signal evdevStateUpdate(var data)
     signal gammaStateUpdate(var data)
     signal themeAutoStateUpdate(var data)
@@ -81,7 +82,7 @@ Singleton {
     property bool screensaverInhibited: false
     property var screensaverInhibitors: []
 
-    property var activeSubscriptions: ["network", "network.credentials", "loginctl", "freedesktop", "freedesktop.screensaver", "gamma", "theme.auto", "wallpaper", "bluetooth", "bluetooth.pairing", "brightness", "wlroutput", "evdev", "browser", "dbus", "clipboard", "sysupdate", "files"]
+    property var activeSubscriptions: ["network", "network.credentials", "loginctl", "freedesktop", "freedesktop.screensaver", "gamma", "theme.auto", "wallpaper", "bluetooth", "bluetooth.pairing", "brightness", "wlroutput", "kwin", "evdev", "browser", "dbus", "clipboard", "sysupdate", "files"]
     property var connectionCapabilities: null
 
     Component.onCompleted: {
@@ -315,6 +316,8 @@ Singleton {
             }
         } else if (service === "wlroutput") {
             wlrOutputStateUpdate(data);
+        } else if (service === "kwin") {
+            kwinStateUpdate(data);
         } else if (service === "evdev") {
             if (data.capsLock !== undefined) {
                 capsLockState = data.capsLock;

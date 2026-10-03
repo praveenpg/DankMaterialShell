@@ -109,6 +109,7 @@ Singleton {
         case "scroll":
         case "miracle":
         case "umbriel":
+        case "kwin":
             return true;
         default:
             return false;
@@ -137,7 +138,7 @@ Singleton {
     readonly property bool supportsCursorConfig: isNiri || isHyprland || isMango
     readonly property bool supportsDisplayConfig: isNiri || isHyprland || isMango || isAqueous
     readonly property bool supportsBarAutoHideReveal: isNiri || isHyprland || isMango
-    readonly property bool supportsWorkspaces: isNiri || isHyprland || isMango || isAqueous || isUmbriel
+    readonly property bool supportsWorkspaces: isNiri || isHyprland || isMango || isAqueous || isUmbriel || isKwin
     // compositors where a workspace that does not exist yet is still a valid switch target
     readonly property bool supportsPersistentWorkspaces: isHyprland || isMango || isSway || isScroll || isMiracle
     readonly property bool supportsWorkspaceUrgency: isKnownCompositor && !isLabwc
@@ -250,6 +251,14 @@ Singleton {
             root.workspaceStateChanged();
         }
         function onWindowsChanged() {
+            root.workspaceStateChanged();
+        }
+    }
+
+    Connections {
+        target: KWinService
+        enabled: root.isKwin
+        function onStateChanged() {
             root.workspaceStateChanged();
         }
     }
@@ -408,6 +417,8 @@ Singleton {
             return MangoService.activeOutput;
         if (isUmbriel)
             return UmbrielService.focusedOutput;
+        if (isKwin)
+            return KWinService.focusedOutput;
 
         return "";
     }
@@ -1794,6 +1805,8 @@ Singleton {
             }
         case "umbriel":
             return WorkspaceModel.umbrielWorkspacesForScreen(UmbrielService.workspaces, _followedScreen(screenName, followFocus), options.occupiedOnly, _workspaceRecords);
+        case "kwin":
+            return WorkspaceModel.kwinWorkspacesForScreen(KWinService, _followedScreen(screenName, followFocus), options.occupiedOnly, _workspaceRecords);
         default:
             return [];
         }
@@ -1815,6 +1828,8 @@ Singleton {
             return WorkspaceModel.aqueousCurrentId(_aqueousWorkspaceState(_followedScreen(screenName, followFocus)));
         case "umbriel":
             return WorkspaceModel.umbrielCurrentId(UmbrielService.workspaces, _followedScreen(screenName, followFocus));
+        case "kwin":
+            return WorkspaceModel.kwinCurrentId(KWinService, _followedScreen(screenName, followFocus));
         default:
             return 1;
         }
@@ -1850,6 +1865,8 @@ Singleton {
             return WorkspaceModel.aqueousActiveWorkspace(_aqueousWorkspaceState(screenName), screenName);
         case "umbriel":
             return WorkspaceModel.umbrielActiveWorkspace(UmbrielService.workspaces, screenName);
+        case "kwin":
+            return WorkspaceModel.kwinActiveWorkspace(KWinService, screenName);
         default:
             return null;
         }
@@ -1873,6 +1890,8 @@ Singleton {
             return WorkspaceModel.aqueousWindowsOnWorkspace(sortedToplevels, record);
         case "umbriel":
             return WorkspaceModel.umbrielWindowsOnWorkspace(UmbrielService.windows, record);
+        case "kwin":
+            return WorkspaceModel.kwinWindowsOnWorkspace(KWinService.windows, record);
         default:
             return [];
         }
@@ -1888,6 +1907,7 @@ Singleton {
             return WorkspaceModel.hyprlandWorkspaceOccupied(Array.from(Hyprland.toplevels?.values || []), record);
         case "mango":
         case "umbriel":
+        case "kwin":
             return record.occupied === true;
         case "aqueous":
             return AqueousService.available && WorkspaceModel.aqueousWorkspaceOccupied(AqueousService.toplevels, record);
@@ -1920,6 +1940,7 @@ Singleton {
         case "scroll":
         case "miracle":
         case "umbriel":
+        case "kwin":
             return loadedUrgent;
         default:
             return record?.urgent === true;
@@ -1932,6 +1953,8 @@ Singleton {
             return WorkspaceModel.niriWorkspaceUrgent(NiriService.windows, record);
         case "umbriel":
             return WorkspaceModel.umbrielWorkspaceUrgent(UmbrielService.windows, record);
+        case "kwin":
+            return WorkspaceModel.kwinWorkspaceUrgent(KWinService.windows, record);
         default:
             return record?.urgent ?? false;
         }
@@ -1974,6 +1997,9 @@ Singleton {
             return;
         case "umbriel":
             UmbrielService.action(`workspace-switch:${record.idx}/${record.output}`);
+            return;
+        case "kwin":
+            KWinService.switchDesktop(record.desktop, record.output);
             return;
         }
     }
@@ -2020,6 +2046,12 @@ Singleton {
             {
                 const name = _followedScreen(screenName, followFocus);
                 stepWorkspace(WorkspaceModel.umbrielWorkspacesForScreen(UmbrielService.workspaces, name, false, _workspaceRecords), WorkspaceModel.umbrielCurrentId(UmbrielService.workspaces, name), direction);
+                return;
+            }
+        case "kwin":
+            {
+                const name = _followedScreen(screenName, followFocus);
+                stepWorkspace(WorkspaceModel.kwinWorkspacesForScreen(KWinService, name, false, _workspaceRecords), WorkspaceModel.kwinCurrentId(KWinService, name), direction);
                 return;
             }
         }

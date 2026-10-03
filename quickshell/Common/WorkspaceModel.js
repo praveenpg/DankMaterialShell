@@ -627,3 +627,53 @@ function umbrielWindowsOnWorkspace(windows, workspace) {
 function umbrielWorkspaceUrgent(windows, workspace) {
     return windows.some(win => win.workspace === workspace.id && win.urgent === true);
 }
+
+// One record per output and desktop: KWin desktops span outputs, and records are cached by id across screens.
+function kwinRecord(desktop, index, output, current, occupied) {
+    return {
+        id: output + "/" + desktop.id,
+        desktop: desktop.id,
+        idx: index + 1,
+        name: desktop.name,
+        output: output,
+        active: desktop.id === current,
+        placeholder: false,
+        occupied: occupied
+    };
+}
+
+function kwinOnDesktop(win, desktopId, screenName) {
+    return !win.skipTaskbar && !win.onAllDesktops && win.output === screenName && win.desktops.includes(desktopId);
+}
+
+function kwinCurrentDesktop(raw, screenName) {
+    return (raw.outputs.find(o => o.name === screenName) ?? raw.outputs[0])?.currentDesktop ?? "";
+}
+
+function kwinWorkspacesForScreen(raw, screenName, occupiedOnly, cache) {
+    const current = kwinCurrentDesktop(raw, screenName);
+    const records = raw.desktops.map((d, i) => kwinRecord(d, i, screenName, current, raw.windows.some(w => kwinOnDesktop(w, d.id, screenName))));
+    dropStale(cache, new Set(raw.outputs.flatMap(o => raw.desktops.map(d => o.name + "/" + d.id))));
+    return records.filter(r => !occupiedOnly || r.active || r.occupied).map(r => reuse(cache, r.id, r));
+}
+
+function kwinCurrentId(raw, screenName) {
+    const current = kwinCurrentDesktop(raw, screenName);
+    return current ? screenName + "/" + current : "";
+}
+
+function kwinActiveWorkspace(raw, screenName) {
+    return kwinWorkspacesForScreen(raw, screenName, false, {}).find(r => r.active) ?? null;
+}
+
+function kwinWindowsOnWorkspace(windows, workspace) {
+    return windows.filter(w => kwinOnDesktop(w, workspace.desktop, workspace.output)).map(w => ({
+                id: w.id,
+                app_id: w.appId,
+                activated: w.active === true
+            }));
+}
+
+function kwinWorkspaceUrgent(windows, workspace) {
+    return windows.some(w => w.demandsAttention === true && kwinOnDesktop(w, workspace.desktop, workspace.output));
+}

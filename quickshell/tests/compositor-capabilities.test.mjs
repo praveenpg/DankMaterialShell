@@ -79,9 +79,9 @@ test("window rules, layout, cursor and bar auto hide cover niri, hyprland and ma
     expectSet("supportsBarAutoHideReveal", ["niri", "hyprland", "mango"]);
 });
 
-test("display config, workspaces and smart dock add aqueous", () => {
+test("display config and smart dock add aqueous, workspaces add aqueous and kwin", () => {
     expectSet("supportsDisplayConfig", ["niri", "hyprland", "mango", "aqueous"]);
-    expectSet("supportsWorkspaces", ["niri", "hyprland", "mango", "aqueous"]);
+    expectSet("supportsWorkspaces", ["niri", "hyprland", "mango", "aqueous", "kwin"]);
     expectSet("supportsSmartDock", ["niri", "hyprland", "mango", "aqueous"]);
 });
 

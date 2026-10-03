@@ -33,6 +33,8 @@ DankFloatingWindow {
             };
             name = workspace.name;
         }
+        if (CompositorService.isKwin)
+            name = KWinService.focusedDesktop?.name ?? "";
         nameInput.text = name;
         visible = true;
         Qt.callLater(() => nameInput.forceActiveFocus());
@@ -73,6 +75,8 @@ DankFloatingWindow {
             NiriService.renameWorkspace(name);
         } else if (CompositorService.isHyprland) {
             HyprlandService.renameWorkspace(name);
+        } else if (CompositorService.isKwin && KWinService.focusedDesktop) {
+            KWinService.renameDesktop(KWinService.focusedDesktop.id, name);
         } else {
             log.warn("rename not supported for this compositor");
         }

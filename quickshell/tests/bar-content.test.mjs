@@ -34,15 +34,15 @@ test("widget normalization preserves metadata, defaults and positional occurrenc
 test("focus discovery keeps compositor names separate from first-screen fallback", () => {
     const source = read("Services/CompositorService.qml");
     const context = vm.createContext({
-        isAqueous: false, isHyprland: false, isNiri: false, isSway: false, isScroll: false, isMiracle: false, isMango: false, isUmbriel: false,
+        isAqueous: false, isHyprland: false, isNiri: false, isSway: false, isScroll: false, isMiracle: false, isMango: false, isUmbriel: false, isKwin: false,
         AqueousService: { available: true, focusedOutput: "second" }, Hyprland: { focusedMonitor: { name: "second" } },
         NiriService: { currentOutput: "second" }, I3: { workspaces: { values: [{ focused: true, monitor: { name: "second" } }] } },
-        MangoService: { activeOutput: "second" }, Quickshell: { screens: [{ name: "first" }, { name: "second" }] }
+        MangoService: { activeOutput: "second" }, KWinService: { focusedOutput: "second" }, Quickshell: { screens: [{ name: "first" }, { name: "second" }] }
     });
     vm.runInContext(method(source, "getFocusedScreenName") + method(source, "getFocusedScreen"), context);
     assert.equal(context.getFocusedScreenName(), "");
     assert.equal(context.getFocusedScreen().name, "first");
-    for (const compositor of ["isAqueous", "isHyprland", "isNiri", "isSway", "isScroll", "isMiracle", "isMango"]) {
+    for (const compositor of ["isAqueous", "isHyprland", "isNiri", "isSway", "isScroll", "isMiracle", "isMango", "isKwin"]) {
         context[compositor] = true;
         assert.equal(context.getFocusedScreenName(), "second", compositor);
         assert.equal(context.getFocusedScreen().name, "second", compositor);

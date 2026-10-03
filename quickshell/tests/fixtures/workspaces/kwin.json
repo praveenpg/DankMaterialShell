@@ -1,0 +1,19 @@
+{
+  "perOutputDesktops": true,
+  "desktops": [
+    { "id": "d1", "name": "Web" },
+    { "id": "d2", "name": "Code" },
+    { "id": "d3", "name": "Chat" }
+  ],
+  "outputs": [
+    { "name": "DP-1", "currentDesktop": "d1" },
+    { "name": "HDMI-A-1", "currentDesktop": "d2" }
+  ],
+  "windows": [
+    { "id": "{a}", "appId": "firefox", "desktops": ["d1"], "onAllDesktops": false, "output": "DP-1", "active": true, "demandsAttention": false, "skipTaskbar": false },
+    { "id": "{b}", "appId": "org.kde.kate", "desktops": ["d2"], "onAllDesktops": false, "output": "HDMI-A-1", "active": false, "demandsAttention": false, "skipTaskbar": false },
+    { "id": "{c}", "appId": "org.kde.konsole", "desktops": ["d3"], "onAllDesktops": false, "output": "DP-1", "active": false, "demandsAttention": true, "skipTaskbar": false },
+    { "id": "{d}", "appId": "org.kde.yakuake", "desktops": [], "onAllDesktops": true, "output": "DP-1", "active": false, "demandsAttention": false, "skipTaskbar": false },
+    { "id": "{e}", "appId": "org.kde.plasmashell", "desktops": ["d2"], "onAllDesktops": false, "output": "DP-1", "active": false, "demandsAttention": false, "skipTaskbar": true }
+  ]
+}

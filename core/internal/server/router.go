@@ -13,6 +13,7 @@ import (
 	serverDgop "github.com/AvengeMedia/DankMaterialShell/core/internal/server/dgop"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/evdev"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/freedesktop"
+	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/kwin"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/location"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/loginctl"
 	serverLyrics "github.com/AvengeMedia/DankMaterialShell/core/internal/server/lyrics"
@@ -180,6 +181,10 @@ func newRequestMux() *ipc.Mux {
 			return
 		}
 		wlroutput.HandleRequest(conn, req, wlrOutputManager)
+	}))
+
+	mux.HandlePrefix("kwin.", requestHandler(func(conn *ipc.ConnWriter, req ipc.Request) {
+		kwin.HandleRequest(conn, req, kwinManager)
 	}))
 
 	mux.HandlePrefix("evdev.", requestHandler(func(conn *ipc.ConnWriter, req ipc.Request) {
