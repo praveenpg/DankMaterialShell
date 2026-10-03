@@ -235,3 +235,19 @@ func TestCheckQtPlatformThemePlugin(t *testing.T) {
 		}
 	})
 }
+
+func TestCheckKwinHelpersWarnsForEachMissingTool(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "kscreen-doctor"), []byte("#!/bin/sh\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir)
+
+	got := map[string]status{}
+	for _, r := range checkKwinHelpers() {
+		got[r.name] = r.status
+	}
+	if got["kscreen-doctor"] != statusOK || got["kcmshell6"] != statusWarn {
+		t.Fatalf("statuses = %v, want kscreen-doctor ok and kcmshell6 warn", got)
+	}
+}

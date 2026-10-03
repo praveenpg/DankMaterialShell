@@ -333,12 +333,27 @@ Item {
             iconName: "select_window"
 
             SettingsRow {
+                visible: !CompositorService.isKwin
                 subtitle: I18n.tr("Define rules for window behavior. Saves to %1", "window rules settings description, %1 is a config file name").arg(root.dmsRulesFileName)
             }
 
             SettingsRow {
+                visible: CompositorService.isKwin
+                title: I18n.tr("KWin window rules", "window rules settings row title on KWin")
+                subtitle: I18n.tr("KWin keeps window rules in its own editor, which can detect a window's properties by clicking it", "window rules settings description on KWin")
+
+                DankButton {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: I18n.tr("Open")
+                    backgroundColor: Theme.primary
+                    textColor: Theme.primaryText
+                    onClicked: KWinService.openRulesEditor()
+                }
+            }
+
+            SettingsRow {
                 id: createRuleRow
-                visible: root.activeWindows.length > 0
+                visible: root.activeWindows.length > 0 && !CompositorService.isKwin
                 title: I18n.tr("Create rule for:")
 
                 DankDropdown {
@@ -374,6 +389,7 @@ Item {
 
         SettingsCard {
             width: parent.width
+            visible: !CompositorService.isKwin
             iconName: "list"
             title: I18n.tr("Rules (%1)", "window rules settings card title, %1 is a count").arg(root.windowRules?.length ?? 0)
 
@@ -636,7 +652,7 @@ Item {
         }
 
         SettingsFabBar {
-            shown: !root.readOnly
+            shown: !root.readOnly && !CompositorService.isKwin
 
             DankFab {
                 text: I18n.tr("Add window rule")

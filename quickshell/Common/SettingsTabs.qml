@@ -756,7 +756,7 @@ Singleton {
             return false;
         if (entry.hyprlandNiriOnly && !CompositorService.isNiri && !CompositorService.isHyprland)
             return false;
-        if (entry.windowRulesCapable && !CompositorService.supportsWindowRules)
+        if (entry.windowRulesCapable && !CompositorService.supportsWindowRules && !(CompositorService.isKwin && KWinService.rulesEditorAvailable))
             return false;
         if (entry.layoutCapable && !CompositorService.supportsLayoutConfig)
             return false;

@@ -11,6 +11,8 @@ Singleton {
     readonly property var log: Log.scoped("KWinService")
 
     property var state: ({})
+    // KDE's rule editor (kcm_kwinrules, opened through kcmutils' kcmshell6) stands in for DMS-managed rules on KWin.
+    property bool rulesEditorAvailable: false
     readonly property bool available: state.available === true
     readonly property var desktops: state.desktops ?? []
     readonly property var outputs: state.outputs ?? []
@@ -95,6 +97,16 @@ Singleton {
             activate: () => root.windowAction(w.id, "activate"),
             close: () => root.windowAction(w.id, "close")
         };
+    }
+
+    function probeRulesEditor() {
+        Proc.runCommand("kwin-rules-editor", ["sh", "-c", "command -v kcmshell6"], (output, exitCode) => {
+            root.rulesEditorAvailable = exitCode === 0;
+        }, 0);
+    }
+
+    function openRulesEditor() {
+        Quickshell.execDetached(["kcmshell6", "kcm_kwinrules"]);
     }
 
     function lock() {

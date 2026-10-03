@@ -1493,6 +1493,8 @@ Singleton {
         compositorDetected = true;
         if (isNiri)
             NiriService.generateNiriBlurrule();
+        if (isKwin)
+            KWinService.probeRulesEditor();
         Qt.callLater(seedDmsWindowFloatingRule);
     }
 

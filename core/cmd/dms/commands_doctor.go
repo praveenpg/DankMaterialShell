@@ -793,6 +793,10 @@ func checkWindowManagers() []checkResult {
 		results = append(results, checkAqueousConfigHelper())
 	}
 
+	if utils.CommandExists("kwin_wayland") {
+		results = append(results, checkKwinHelpers()...)
+	}
+
 	results = append(results, checkCompositorBlurSupport())
 
 	return results
@@ -1691,3 +1695,19 @@ func checkFonts() []checkResult {
 	return results
 }
 
+// KWin offers no wlroots protocols for these, so DMS goes through KDE's tools.
+func checkKwinHelpers() []checkResult {
+	helpers := []struct{ command, purpose string }{
+		{"kscreen-doctor", "display configuration and display power on KWin (libkscreen)"},
+		{"kcmshell6", "opening KWin's window rules editor from Settings (kcmutils)"},
+	}
+	var results []checkResult
+	for _, h := range helpers {
+		if utils.CommandExists(h.command) {
+			results = append(results, checkResult{catCompositor, h.command, statusOK, "Installed", "", doctorDocsURL + "#compositor-checks"})
+			continue
+		}
+		results = append(results, checkResult{catCompositor, h.command, statusWarn, "Not installed", "Needed for " + h.purpose, doctorDocsURL + "#compositor-checks"})
+	}
+	return results
+}
