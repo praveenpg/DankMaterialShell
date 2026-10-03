@@ -92,6 +92,7 @@ var (
 	niriVersionRegex       = regexp.MustCompile(`niri (\d+\.\d+)`)
 	swayVersionRegex       = regexp.MustCompile(`sway version (\d+\.\d+)`)
 	riverVersionRegex      = regexp.MustCompile(`river (\d+\.\d+)`)
+	kwinVersionRegex       = regexp.MustCompile(`kwin (\d+\.\d+(?:\.\d+)?)`)
 	wayfireVersionRegex    = regexp.MustCompile(`wayfire (\d+\.\d+)`)
 	labwcVersionRegex      = regexp.MustCompile(`labwc (\d+\.\d+\.\d+)`)
 	mangowcVersionRegex    = regexp.MustCompile(`mango (\d+\.\d+\.\d+)`)
@@ -746,6 +747,7 @@ func checkWindowManagers() []checkResult {
 		{"Scroll", "scroll", "--version", scrollVersionRegex, []string{"scroll"}},
 		{"Aqueous", "aqueous", "-version", aqueousVersionRegex, []string{"aqueous"}},
 		{"Umbriel", "umbriel", "--version", umbrielVersionRegex, []string{"umbriel"}},
+		{"KWin", "kwin_wayland", "--version", kwinVersionRegex, []string{"kwin_wayland"}},
 	}
 
 	var results []checkResult
@@ -778,7 +780,7 @@ func checkWindowManagers() []checkResult {
 		results = append(results, checkResult{
 			catCompositor, "Compositor", statusError,
 			"No supported Wayland compositor found",
-			"Install Hyprland, niri, Sway, River, Wayfire, labwc, mangowc, miracle-wm, Scroll, Aqueous, or Umbriel",
+			"Install Hyprland, niri, Sway, River, Wayfire, labwc, mangowc, miracle-wm, Scroll, Aqueous, Umbriel, or KWin",
 			doctorDocsURL + "#compositor-checks",
 		})
 	}
@@ -1688,3 +1690,4 @@ func checkFonts() []checkResult {
 
 	return results
 }
+

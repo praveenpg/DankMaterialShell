@@ -109,6 +109,8 @@ their exact Git commits, so the same plugins can be reproduced on another machin
 
 Works best with [niri](https://github.com/YaLTeR/niri), [Hyprland](https://hyprland.org/), [Sway](https://swaywm.org/), [MangoWC](https://github.com/DreamMaoMao/mangowc), [labwc](https://labwc.github.io/), [Scroll](https://github.com/dawsers/scroll), and [Miracle WM](https://github.com/miracle-wm-org/miracle-wm) with full workspace switching, overview integration, and monitor management. Other Wayland compositors work with reduced features.
 
+[KWin](https://invent.kde.org/plasma/kwin) (6.x, as the compositor with DMS as its only shell) has workspace switching, window management, screenshots, display configuration, and display power. It needs `kscreen-doctor` (libkscreen) for displays and display power, and screenshots need the installed `com.danklinux.dms.desktop`. KWin keeps its own lock screen and has no overview, smart dock, or layout, cursor, or input settings.
+
 [Compositor configuration guide](https://danklinux.com/docs/dankmaterialshell/compositors)
 
 ## Command Line Interface

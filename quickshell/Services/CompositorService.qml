@@ -186,6 +186,7 @@ Singleton {
         case "labwc":
         case "aqueous":
         case "umbriel":
+        case "kwin":
             return compositor;
         default:
             return "";

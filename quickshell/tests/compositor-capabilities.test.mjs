@@ -86,8 +86,8 @@ test("smart dock adds aqueous, display config and workspaces add aqueous and kwi
 });
 
 test("workspace urgency and follow focus cover every compositor but labwc", () => {
-    expectSet("supportsWorkspaceUrgency", ["niri", "hyprland", "mango", "sway", "scroll", "miracle", "aqueous"]);
-    expectSet("supportsWorkspaceFollowFocus", ["niri", "hyprland", "mango", "sway", "scroll", "miracle", "aqueous"]);
+    expectSet("supportsWorkspaceUrgency", ["niri", "hyprland", "mango", "sway", "scroll", "miracle", "aqueous", "kwin"]);
+    expectSet("supportsWorkspaceFollowFocus", ["niri", "hyprland", "mango", "sway", "scroll", "miracle", "aqueous", "kwin"]);
 });
 
 test("persistent workspaces cover compositors that open a missing workspace on demand", () => {
@@ -100,17 +100,13 @@ test("native overview is niri and aqueous, pointer is niri and mango, input is n
     expectSet("supportsInputConfig", ["niri"]);
 });
 
-// kwin is detected but has no config layout or launcher logo yet
-const CONFIGURED = COMPOSITORS.filter(c => c !== "kwin");
-
-test("every configured compositor is known and kwin and an undetected one are not", () => {
-    expectSet("isKnownCompositor", CONFIGURED);
+test("every compositor is known and an undetected one is not", () => {
+    expectSet("isKnownCompositor", COMPOSITORS);
 });
 
-test("configKey is the lowercase key and empty for kwin or when undetected", () => {
-    for (const compositor of CONFIGURED)
+test("configKey is the lowercase key and empty when undetected", () => {
+    for (const compositor of COMPOSITORS)
         assert.equal(evaluate("configKey", compositor), compositor);
-    assert.equal(evaluate("configKey", "kwin"), "");
     assert.equal(evaluate("configKey", undefined), "");
 });
 

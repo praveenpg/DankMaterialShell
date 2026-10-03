@@ -201,7 +201,7 @@ Singleton {
         return getWidget(widgetId, getFocusedScreenName()) || getWidget(widgetId);
     }
 
-    readonly property bool focusedScreenDetectionSupported: (CompositorService.isAqueous && AqueousService.available) || CompositorService.isHyprland || CompositorService.isNiri || CompositorService.isMango || CompositorService.isSway || CompositorService.isScroll || CompositorService.isMiracle || CompositorService.isUmbriel
+    readonly property bool focusedScreenDetectionSupported: (CompositorService.isAqueous && AqueousService.available) || CompositorService.isHyprland || CompositorService.isNiri || CompositorService.isMango || CompositorService.isSway || CompositorService.isScroll || CompositorService.isMiracle || CompositorService.isUmbriel || CompositorService.isKwin
 
     function getFocusedScreenName() {
         return CompositorService.getFocusedScreenName();

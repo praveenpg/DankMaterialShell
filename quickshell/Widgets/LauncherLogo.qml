@@ -66,6 +66,9 @@ Item {
             return "file://" + Theme.shellDir + "/assets/aqueous.svg";
         case "umbriel":
             return "file://" + Theme.shellDir + "/assets/umbriel.svg";
+        // KWin installs its own icon; KDE artwork is not MIT-licensed, so DMS does not ship a copy.
+        case "kwin":
+            return Quickshell.iconPath("kwin", true);
         default:
             return "";
         }
