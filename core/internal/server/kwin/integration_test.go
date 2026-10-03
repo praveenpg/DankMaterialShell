@@ -28,23 +28,27 @@ type session struct {
 }
 
 // sandboxEnv isolates every XDG dir: kwin_wayland and anything the private bus
-// activates otherwise rewrite the real kwinrc and kglobalshortcutsrc.
+// activates otherwise rewrite the real kwinrc and leave sockets in the real runtime dir.
 func sandboxEnv(t *testing.T) []string {
 	root := t.TempDir()
 	env := []string{}
 	for _, kv := range os.Environ() {
 		key, _, _ := strings.Cut(kv, "=")
-		if slices.Contains([]string{"DISPLAY", "WAYLAND_DISPLAY", "DBUS_SESSION_BUS_ADDRESS"}, key) || strings.HasPrefix(key, "XDG_") && key != "XDG_RUNTIME_DIR" {
+		if slices.Contains([]string{"DISPLAY", "WAYLAND_DISPLAY", "DBUS_SESSION_BUS_ADDRESS"}, key) || strings.HasPrefix(key, "XDG_") {
 			continue
 		}
 		env = append(env, kv)
 	}
-	for _, dir := range []string{"CONFIG", "DATA", "STATE", "CACHE"} {
+	for _, dir := range []string{"CONFIG", "DATA", "STATE", "CACHE", "RUNTIME"} {
 		path := filepath.Join(root, strings.ToLower(dir))
 		if err := os.MkdirAll(path, 0o700); err != nil {
 			t.Fatal(err)
 		}
-		env = append(env, "XDG_"+dir+"_HOME="+path)
+		suffix := "_HOME="
+		if dir == "RUNTIME" {
+			suffix = "_DIR="
+		}
+		env = append(env, "XDG_"+dir+suffix+path)
 	}
 	return env
 }

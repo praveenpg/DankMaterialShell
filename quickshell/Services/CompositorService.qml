@@ -1597,6 +1597,14 @@ Singleton {
                 present: !!hyprlandSignature,
                 test: ["test", "-S", runtimeDir + "/hypr/" + hyprlandSignature + "/.socket.sock"],
                 detail: "HYPRLAND_INSTANCE_SIGNATURE " + hyprlandSignature
+            },
+            // kwin_wayland is non-dumpable, so its socket fd is hidden from the owner lookup
+            // without Plasma's wrapper, and it exports no socket env var.
+            {
+                name: "kwin",
+                present: true,
+                test: ["sh", "-c", "dbus-send --session --print-reply --dest=org.freedesktop.DBus /org/freedesktop/DBus org.freedesktop.DBus.NameHasOwner string:org.kde.KWin | grep -q 'boolean true'"],
+                detail: "org.kde.KWin on the session bus"
             }
         ];
     }

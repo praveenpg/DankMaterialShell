@@ -653,7 +653,11 @@ function kwinCurrentDesktop(raw, screenName) {
 function kwinWorkspacesForScreen(raw, screenName, occupiedOnly, cache) {
     const current = kwinCurrentDesktop(raw, screenName);
     const records = raw.desktops.map((d, i) => kwinRecord(d, i, screenName, current, raw.windows.some(w => kwinOnDesktop(w, d.id, screenName))));
-    dropStale(cache, new Set(raw.outputs.flatMap(o => raw.desktops.map(d => o.name + "/" + d.id))));
+    // Qt's V4 engine has no Array.prototype.flatMap.
+    const ids = new Set();
+    for (const o of raw.outputs)
+        raw.desktops.forEach(d => ids.add(o.name + "/" + d.id));
+    dropStale(cache, ids);
     return records.filter(r => !occupiedOnly || r.active || r.occupied).map(r => reuse(cache, r.id, r));
 }
 
