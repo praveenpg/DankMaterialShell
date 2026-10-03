@@ -136,7 +136,7 @@ Singleton {
     property bool dmsWindowFloatingActive: false
     readonly property bool supportsLayoutConfig: isNiri || isHyprland || isMango
     readonly property bool supportsCursorConfig: isNiri || isHyprland || isMango
-    readonly property bool supportsDisplayConfig: isNiri || isHyprland || isMango || isAqueous
+    readonly property bool supportsDisplayConfig: isNiri || isHyprland || isMango || isAqueous || isKwin
     readonly property bool supportsBarAutoHideReveal: isNiri || isHyprland || isMango
     readonly property bool supportsWorkspaces: isNiri || isHyprland || isMango || isAqueous || isUmbriel || isKwin
     // compositors where a workspace that does not exist yet is still a valid switch target

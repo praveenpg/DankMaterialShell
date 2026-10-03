@@ -1,0 +1,28 @@
+{
+  "features": 1,
+  "outputs": [
+    {
+      "id": 1, "name": "DP-1", "enabled": true, "connected": true,
+      "pos": { "x": 0, "y": 0 }, "scale": 1.75, "rotation": 1,
+      "currentModeId": "2", "preferredModes": ["2"],
+      "sizeMM": { "width": 597, "height": 336 },
+      "modes": [
+        { "id": "1", "name": "2560x1440@60", "refreshRate": 59.951, "size": { "width": 2560, "height": 1440 } },
+        { "id": "2", "name": "5120x2880@60", "refreshRate": 60, "size": { "width": 5120, "height": 2880 } }
+      ]
+    },
+    {
+      "id": 2, "name": "HDMI-A-1", "enabled": true, "connected": true,
+      "pos": { "x": 2926, "y": 0 }, "scale": 1, "rotation": 8,
+      "currentModeId": "7", "preferredModes": [],
+      "sizeMM": { "width": 0, "height": 0 },
+      "modes": [
+        { "id": "7", "name": "1920x1080@60", "refreshRate": 60, "size": { "width": 1920, "height": 1080 } }
+      ]
+    },
+    {
+      "id": 3, "name": "DP-2", "enabled": false, "connected": false,
+      "pos": { "x": 0, "y": 0 }, "scale": 1, "rotation": 1, "currentModeId": "", "preferredModes": [], "modes": []
+    }
+  ]
+}

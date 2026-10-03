@@ -12,6 +12,7 @@ import (
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/geolocation"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/matugen"
+	"github.com/AvengeMedia/DankMaterialShell/core/internal/screenshot"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/apppicker"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/bluez"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/brightness"
@@ -68,7 +69,7 @@ var appPickerManager *apppicker.Manager
 var cupsManager *cups.Manager
 var tailscaleManager *tailscale.Manager
 var brightnessManager *brightness.Manager
-var wlrOutputManager *wlroutput.Manager
+var wlrOutputManager wlroutput.Backend
 var kwinManager *kwin.Manager
 var evdevManager *evdev.Manager
 var clipboardManager *clipboard.Manager
@@ -252,6 +253,16 @@ func InitializeBrightnessManager() error {
 
 func InitializeWlrOutputManager() error {
 	log.Info("Attempting to initialize WlrOutput management...")
+
+	if screenshot.DetectCompositor() == screenshot.CompositorKwin {
+		manager, err := wlroutput.NewKscreenManager()
+		if err != nil {
+			return err
+		}
+		wlrOutputManager = manager
+		log.Info("Output management initialized through kscreen-doctor")
+		return nil
+	}
 
 	if wlContext == nil {
 		ctx, err := wlcontext.New()

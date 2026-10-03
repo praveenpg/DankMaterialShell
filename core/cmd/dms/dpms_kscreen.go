@@ -3,11 +3,10 @@ package main
 import (
 	"errors"
 	"fmt"
-	"os"
-	"os/exec"
 	"slices"
 	"strings"
 
+	"github.com/AvengeMedia/DankMaterialShell/core/internal/kscreen"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/screenshot"
 )
 
@@ -31,10 +30,7 @@ type kscreenDPMS struct {
 }
 
 func newKscreenDPMS() (*kscreenDPMS, error) {
-	if _, err := exec.LookPath("kscreen-doctor"); err != nil {
-		return nil, errors.New("display power on KWin needs kscreen-doctor (libkscreen)")
-	}
-	out, err := runKscreenDoctor("--dpms", "show")
+	out, err := kscreen.Run("--dpms", "show")
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +50,7 @@ func (k *kscreenDPMS) SetDPMS(outputName string, on bool) error {
 	if err != nil {
 		return err
 	}
-	_, err = runKscreenDoctor(args...)
+	_, err = kscreen.Run(args...)
 	return err
 }
 
@@ -93,16 +89,4 @@ func parseKscreenDPMS(out string) []string {
 		}
 	}
 	return outputs
-}
-
-func runKscreenDoctor(args ...string) (string, error) {
-	// kscreen-doctor aborts instead of erroring when it cannot reach Wayland.
-	if os.Getenv("WAYLAND_DISPLAY") == "" {
-		return "", errors.New("WAYLAND_DISPLAY is not set")
-	}
-	out, err := exec.Command("kscreen-doctor", args...).CombinedOutput()
-	if err != nil {
-		return "", fmt.Errorf("kscreen-doctor %s: %w: %s", strings.Join(args, " "), err, strings.TrimSpace(string(out)))
-	}
-	return string(out), nil
 }

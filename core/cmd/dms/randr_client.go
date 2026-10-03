@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 
+	"github.com/AvengeMedia/DankMaterialShell/core/internal/kscreen"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/proto/wlr_output_management"
+	"github.com/AvengeMedia/DankMaterialShell/core/internal/screenshot"
 	wlclient "github.com/AvengeMedia/dankgo/wayland/client"
 )
 
@@ -41,6 +43,9 @@ type randrClient struct {
 }
 
 func queryRandr() ([]randrOutput, error) {
+	if screenshot.DetectCompositor() == screenshot.CompositorKwin {
+		return queryKscreenRandr()
+	}
 	display, err := wlclient.Connect("")
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to Wayland: %w", err)
@@ -169,4 +174,21 @@ func (c *randrClient) buildOutputs() []randrOutput {
 	}
 
 	return outputs
+}
+
+func queryKscreenRandr() ([]randrOutput, error) {
+	outputs, err := kscreen.Outputs()
+	if err != nil {
+		return nil, err
+	}
+	result := make([]randrOutput, 0, len(outputs))
+	for _, o := range outputs {
+		out := randrOutput{Name: o.Name, Scale: o.Scale, Enabled: o.Enabled}
+		if mode := o.CurrentMode(); mode != nil {
+			out.Width, out.Height = mode.Size.Width, mode.Size.Height
+			out.Refresh = int32(mode.RefreshRate*1000 + 0.5)
+		}
+		result = append(result, out)
+	}
+	return result, nil
 }

@@ -31,7 +31,7 @@ type ConfigurationRequest struct {
 	Test  bool         `json:"test"`
 }
 
-func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
+func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, manager Backend) {
 	if manager == nil {
 		models.RespondError(conn, req.ID, "wlroutput manager not initialized")
 		return
@@ -51,11 +51,11 @@ func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 	}
 }
 
-func handleGetState(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
+func handleGetState(conn *ipc.ConnWriter, req ipc.Request, manager Backend) {
 	models.Respond(conn, req.ID, manager.GetState())
 }
 
-func handleApplyConfiguration(conn *ipc.ConnWriter, req ipc.Request, manager *Manager, test bool) {
+func handleApplyConfiguration(conn *ipc.ConnWriter, req ipc.Request, manager Backend, test bool) {
 	headsParam, ok := models.Get[any](req, "heads")
 	if !ok {
 		models.RespondError(conn, req.ID, "missing 'heads' parameter")
@@ -86,7 +86,7 @@ func handleApplyConfiguration(conn *ipc.ConnWriter, req ipc.Request, manager *Ma
 	models.Respond(conn, req.ID, models.SuccessResult{Success: true, Message: msg})
 }
 
-func handleSubscribe(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
+func handleSubscribe(conn *ipc.ConnWriter, req ipc.Request, manager Backend) {
 	clientID := fmt.Sprintf("client-%p", conn)
 	stateChan := manager.Subscribe(clientID)
 	defer manager.Unsubscribe(clientID)
