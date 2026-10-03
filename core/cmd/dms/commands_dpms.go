@@ -55,7 +55,7 @@ func runDPMSOn(cmd *cobra.Command, args []string) {
 		outputName = args[0]
 	}
 
-	client, err := newDPMSClient()
+	client, err := openDPMS()
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
@@ -72,7 +72,7 @@ func runDPMSOff(cmd *cobra.Command, args []string) {
 		outputName = args[0]
 	}
 
-	client, err := newDPMSClient()
+	client, err := openDPMS()
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
@@ -84,7 +84,7 @@ func runDPMSOff(cmd *cobra.Command, args []string) {
 }
 
 func getDPMSOutputs() []string {
-	client, err := newDPMSClient()
+	client, err := openDPMS()
 	if err != nil {
 		return nil
 	}
@@ -93,7 +93,7 @@ func getDPMSOutputs() []string {
 }
 
 func runDPMSList(cmd *cobra.Command, args []string) {
-	client, err := newDPMSClient()
+	client, err := openDPMS()
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
