@@ -3,9 +3,11 @@ Type=Application
 Name=DankMaterialShell
 GenericName=Desktop Shell
 Comment=Material 3 inspired shell for Wayland compositors
-Exec=dms run
+Exec=/usr/bin/dms run
 Icon=com.danklinux.dms
 Terminal=false
 NoDisplay=true
 StartupNotify=false
 Categories=Utility;
+# KWin grants ScreenShot2 only to the binary an installed entry names by absolute path.
+X-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2

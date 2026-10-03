@@ -114,8 +114,11 @@ func (s *Screenshoter) Run() (*CaptureResult, error) {
 		return nil, fmt.Errorf("roundtrip: %w", err)
 	}
 
-	if s.screencopy == nil {
+	if s.screencopy == nil && !usesKwinCapture() {
 		return nil, fmt.Errorf("compositor does not support wlr-screencopy-unstable-v1")
+	}
+	if s.config.Mode == ModeScroll && usesKwinCapture() {
+		return nil, fmt.Errorf("scrolling screenshots are not supported on KWin")
 	}
 
 	if err := s.roundtrip(); err != nil {
@@ -229,6 +232,9 @@ func (s *Screenshoter) captureRegion() (*CaptureResult, error) {
 }
 
 func (s *Screenshoter) captureWindow() (*CaptureResult, error) {
+	if usesKwinCapture() {
+		return s.captureKwinWindow()
+	}
 	if DetectCompositor() == CompositorAqueous {
 		return s.captureAqueousWindow()
 	}
@@ -653,6 +659,9 @@ func (s *Screenshoter) blitBufferScaled(dst, src *ShmBuffer, dstX, dstY, dstW, d
 }
 
 func (s *Screenshoter) captureWholeOutput(output *WaylandOutput) (*CaptureResult, error) {
+	if usesKwinCapture() {
+		return s.captureKwinOutput(output)
+	}
 	cursor := int32(s.config.Cursor)
 
 	frame, err := s.screencopy.CaptureOutput(cursor, output.wlOutput)
@@ -782,6 +791,9 @@ func (s *Screenshoter) captureAndCrop(output *WaylandOutput, region Region) (*Ca
 }
 
 func (s *Screenshoter) captureRegionOnOutput(output *WaylandOutput, region Region) (*CaptureResult, error) {
+	if usesKwinCapture() {
+		return s.captureAndCrop(output, region)
+	}
 	if output.transform != TransformNormal {
 		return s.captureRegionOnTransformedOutput(output, region)
 	}

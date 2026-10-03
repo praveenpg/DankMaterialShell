@@ -158,6 +158,8 @@
                 install -Dm644 ${rootSrc}/assets/systemd/dms.service \
                   $out/lib/systemd/user/dms.service
 
+                substituteInPlace $out/share/applications/com.danklinux.dms.desktop \
+                  --replace-fail /usr/bin/dms $out/bin/dms
                 substituteInPlace $out/lib/systemd/user/dms.service \
                   --replace-fail /usr/bin/dms $out/bin/dms \
                   --replace-fail /bin/kill ${pkgs.coreutils}/bin/kill

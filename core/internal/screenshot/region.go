@@ -208,7 +208,7 @@ func (r *RegionSelector) Run() (*CaptureResult, bool, error) {
 	}
 
 	switch {
-	case r.screencopy == nil:
+	case r.screencopy == nil && !usesKwinCapture():
 		return nil, false, fmt.Errorf("compositor does not support wlr-screencopy-unstable-v1")
 	case r.layerShell == nil:
 		return nil, false, fmt.Errorf("compositor does not support wlr-layer-shell-unstable-v1")
@@ -482,6 +482,10 @@ func (r *RegionSelector) setupOutputHandlers(name uint32, output *client.Output)
 }
 
 func (r *RegionSelector) preCaptureAllOutputs() error {
+	if usesKwinCapture() {
+		r.preCaptureKwin()
+		return nil
+	}
 	r.outputsMu.Lock()
 	outputs := make([]*WaylandOutput, 0, len(r.outputs))
 	for _, o := range r.outputs {
